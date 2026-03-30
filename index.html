@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meu Remedio</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container { width: 100%; max-width: 520px; padding: 0 16px 32px; }
+
+    header {
+      width: 100%; max-width: 520px;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px; position: sticky; top: 0; background: #f0f2f5; z-index: 10;
+    }
+
+    header h1 { font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+    .header-acoes { display: flex; gap: 4px; }
+
+    .btn-icon {
+      background: none; border: none; font-size: 1.4rem; cursor: pointer;
+      padding: 4px 8px; border-radius: 8px; transition: background 0.2s;
+    }
+    .btn-icon:hover { background: #dfe6e9; }
+
+    /* Data de hoje */
+    .data-hoje {
+      text-align: center; font-size: 1rem; color: #636e72;
+      margin-bottom: 16px; text-transform: capitalize; padding-top: 8px;
+    }
+
+    /* Lista de remedios */
+    .lista-remedios { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+
+    .card-remedio {
+      background: white; border-radius: 14px; padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06); transition: transform 0.15s;
+    }
+
+    .card-header {
+      display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;
+    }
+
+    .card-info h3 { font-size: 1rem; font-weight: 700; margin-bottom: 2px; }
+    .card-detalhe { font-size: 0.78rem; color: #636e72; }
+    .card-detalhe span { margin-right: 10px; }
+
+    .card-acoes { display: flex; gap: 4px; }
+    .card-acoes button {
+      background: none; border: none; cursor: pointer; font-size: 1.1rem;
+      padding: 2px 6px; border-radius: 6px; transition: background 0.2s;
+    }
+    .card-acoes button:hover { background: #f0f2f5; }
+
+    .card-status { display: flex; align-items: center; gap: 10px; }
+
+    .btn-tomar {
+      flex: 1; padding: 12px; border-radius: 10px; border: none;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.2s; color: white;
+    }
+
+    .btn-tomar.nao-tomou {
+      background: linear-gradient(135deg, #16a085, #1abc9c);
+      box-shadow: 0 2px 10px rgba(22,160,133,0.3);
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+    .btn-tomar.nao-tomou:hover { transform: scale(1.02); }
+    .btn-tomar.nao-tomou:active { transform: scale(0.97); }
+
+    .btn-tomar.tomou {
+      background: linear-gradient(135deg, #27ae60, #2ecc71);
+      box-shadow: 0 2px 10px rgba(39,174,96,0.2);
+      cursor: default; animation: confirmar 0.4s ease-out;
+    }
+
+    .btn-tomar.nao-hoje {
+      background: #dfe6e9; color: #b2bec3; cursor: default;
+      box-shadow: none; animation: none;
+    }
+
+    .btn-desfazer {
+      background: none; border: none; color: #b2bec3; font-size: 0.78rem;
+      cursor: pointer; text-decoration: underline; transition: color 0.2s;
+    }
+    .btn-desfazer:hover { color: #e74c3c; }
+
+    .streak-badge {
+      font-size: 0.75rem; color: #16a085; font-weight: 600;
+      display: flex; align-items: center; gap: 4px; margin-top: 8px;
+    }
+
+    .vazio-msg {
+      text-align: center; padding: 48px 16px; color: #b2bec3;
+    }
+    .vazio-msg .icone { font-size: 3rem; margin-bottom: 12px; }
+    .vazio-msg p { font-size: 0.9rem; }
+
+    /* Calendario */
+    #calendario {
+      background: white; border-radius: 14px; padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 20px;
+    }
+
+    .cal-topo {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+    }
+
+    .cal-topo h3 { font-size: 0.9rem; font-weight: 700; }
+
+    .cal-filtro {
+      font-size: 0.75rem; padding: 4px 8px; border: 1px solid #dfe6e9;
+      border-radius: 6px; background: white; cursor: pointer; color: #1a1a2e;
+    }
+
+    .cal-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+    }
+    .cal-header span { font-weight: 600; font-size: 0.9rem; text-transform: capitalize; }
+
+    .cal-nav {
+      background: none; border: none; font-size: 1.1rem; cursor: pointer;
+      padding: 4px 10px; border-radius: 8px; transition: background 0.2s; color: #1a1a2e;
+    }
+    .cal-nav:hover:not(:disabled) { background: #f0f2f5; }
+    .cal-nav:disabled { color: #dfe6e9; cursor: default; }
+
+    .cal-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 2px; text-align: center;
+    }
+
+    .cal-dia-semana { font-size: 0.65rem; font-weight: 600; color: #b2bec3; padding: 4px 0; }
+
+    .cal-dia {
+      aspect-ratio: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      font-size: 0.8rem; border-radius: 50%; position: relative;
+    }
+    .cal-dia.vazio { visibility: hidden; }
+    .cal-dia.futuro { color: #dfe6e9; }
+    .cal-dia.hoje { font-weight: 700; box-shadow: inset 0 0 0 2px #16a085; }
+    .cal-dia.tomou-todos::after {
+      content: ''; width: 6px; height: 6px; background: #27ae60;
+      border-radius: 50%; position: absolute; bottom: 2px;
+    }
+    .cal-dia.tomou-parcial::after {
+      content: ''; width: 6px; height: 6px; background: #f39c12;
+      border-radius: 50%; position: absolute; bottom: 2px;
+    }
+    .cal-dia.nao-tomou.passado { color: #e74c3c; opacity: 0.6; }
+
+    /* Modais */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      z-index: 100; justify-content: center; align-items: center; padding: 16px;
+    }
+    .modal-overlay.aberto { display: flex; }
+
+    .modal-content {
+      background: white; border-radius: 16px; padding: 24px;
+      width: 100%; max-width: 400px; animation: modalIn 0.25s ease-out;
+      max-height: 90vh; overflow-y: auto;
+    }
+
+    @keyframes modalIn {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-content h2 { font-size: 1.1rem; margin-bottom: 20px; }
+
+    .campo { margin-bottom: 16px; }
+    .campo label {
+      display: block; font-size: 0.85rem; font-weight: 600;
+      color: #636e72; margin-bottom: 6px;
+    }
+
+    .campo input[type="text"], .campo input[type="time"], .campo select {
+      width: 100%; padding: 10px 12px; border: 2px solid #dfe6e9;
+      border-radius: 8px; font-size: 1rem; outline: none; transition: border-color 0.2s;
+      background: white; color: #1a1a2e;
+    }
+    .campo input:focus, .campo select:focus { border-color: #16a085; }
+
+    .dias-semana-grid {
+      display: flex; gap: 4px; flex-wrap: wrap;
+    }
+    .dia-semana-btn {
+      width: 40px; height: 36px; border-radius: 8px; border: 2px solid #dfe6e9;
+      background: white; cursor: pointer; font-size: 0.75rem; font-weight: 600;
+      color: #636e72; transition: all 0.2s;
+    }
+    .dia-semana-btn.ativo { background: #16a085; color: white; border-color: #16a085; }
+
+    .toggle-row { display: flex; justify-content: space-between; align-items: center; }
+    .toggle-row label { margin-bottom: 0; }
+
+    .toggle { position: relative; width: 48px; height: 26px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0; background: #dfe6e9; border-radius: 26px;
+      cursor: pointer; transition: background 0.3s;
+    }
+    .toggle-slider::before {
+      content: ''; position: absolute; width: 20px; height: 20px;
+      left: 3px; top: 3px; background: white; border-radius: 50%;
+      transition: transform 0.3s;
+    }
+    .toggle input:checked + .toggle-slider { background: #16a085; }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(22px); }
+
+    .nota { font-size: 0.75rem; color: #b2bec3; margin-top: 4px; }
+
+    .modal-botoes { display: flex; gap: 8px; margin-top: 20px; }
+    .modal-botoes button {
+      flex: 1; padding: 10px; border-radius: 8px; border: none;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .modal-botoes button:active { transform: scale(0.97); }
+
+    .btn-salvar { background: #16a085; color: white; }
+    .btn-salvar:hover { background: #138d75; }
+    .btn-fechar { background: #f0f2f5; color: #636e72; }
+    .btn-fechar:hover { background: #dfe6e9; }
+    .btn-excluir { background: #e74c3c; color: white; }
+    .btn-excluir:hover { background: #c0392b; }
+
+    .btn-add {
+      width: 100%; padding: 14px; border-radius: 12px; border: 2px dashed #dfe6e9;
+      background: white; font-size: 0.9rem; font-weight: 600; color: #16a085;
+      cursor: pointer; transition: all 0.2s; margin-bottom: 20px;
+    }
+    .btn-add:hover { border-color: #16a085; background: #f0faf7; }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+    @keyframes confirmar {
+      0% { transform: scale(0.95); }
+      60% { transform: scale(1.03); }
+      100% { transform: scale(1); }
+    }
+
+    @media (min-width: 600px) {
+      .data-hoje { font-size: 1.1rem; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>💊 Meu Remedio</h1>
+    <div class="header-acoes">
+      <button class="btn-icon" aria-label="Configuracoes" onclick="abrirConfigGeral()">⚙️</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <p class="data-hoje" id="data-hoje"></p>
+    <div id="lista-remedios" class="lista-remedios"></div>
+    <button class="btn-add" onclick="abrirModalRemedio()">+ Adicionar Remedio</button>
+    <section id="calendario"></section>
+  </div>
+
+  <!-- Modal: Cadastro/Edicao de Remedio -->
+  <div class="modal-overlay" id="modal-remedio">
+    <div class="modal-content">
+      <h2 id="modal-remedio-titulo">Novo Remedio</h2>
+      <input type="hidden" id="remedio-id">
+      <div class="campo">
+        <label for="remedio-nome">Nome do Remedio</label>
+        <input type="text" id="remedio-nome" placeholder="Ex: Losartana 50mg">
+      </div>
+      <div class="campo">
+        <label for="remedio-horario">Horario</label>
+        <input type="time" id="remedio-horario" value="08:00">
+      </div>
+      <div class="campo">
+        <label>Recorrencia</label>
+        <select id="remedio-recorrencia" onchange="toggleDiasSemana()">
+          <option value="diario">Diariamente</option>
+          <option value="dias_semana">Dias da semana especificos</option>
+          <option value="intervalo">A cada X dias</option>
+        </select>
+      </div>
+      <div class="campo" id="campo-dias-semana" style="display:none">
+        <label>Dias da Semana</label>
+        <div class="dias-semana-grid">
+          <button type="button" class="dia-semana-btn" data-dia="0" onclick="toggleDia(this)">Dom</button>
+          <button type="button" class="dia-semana-btn" data-dia="1" onclick="toggleDia(this)">Seg</button>
+          <button type="button" class="dia-semana-btn" data-dia="2" onclick="toggleDia(this)">Ter</button>
+          <button type="button" class="dia-semana-btn" data-dia="3" onclick="toggleDia(this)">Qua</button>
+          <button type="button" class="dia-semana-btn" data-dia="4" onclick="toggleDia(this)">Qui</button>
+          <button type="button" class="dia-semana-btn" data-dia="5" onclick="toggleDia(this)">Sex</button>
+          <button type="button" class="dia-semana-btn" data-dia="6" onclick="toggleDia(this)">Sab</button>
+        </div>
+      </div>
+      <div class="campo" id="campo-intervalo" style="display:none">
+        <label for="remedio-intervalo">A cada quantos dias?</label>
+        <input type="text" id="remedio-intervalo" placeholder="Ex: 2" inputmode="numeric">
+      </div>
+      <div class="campo">
+        <label for="remedio-notas">Observacoes (opcional)</label>
+        <input type="text" id="remedio-notas" placeholder="Ex: tomar em jejum">
+      </div>
+      <div class="modal-botoes" id="botoes-remedio">
+        <button class="btn-salvar" onclick="salvarRemedio()">Salvar</button>
+        <button class="btn-fechar" onclick="fecharModal('modal-remedio')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Config Geral (Notificacoes) -->
+  <div class="modal-overlay" id="modal-config">
+    <div class="modal-content">
+      <h2>⚙️ Configuracoes</h2>
+      <div class="campo">
+        <div class="toggle-row">
+          <label>Notificacoes</label>
+          <label class="toggle">
+            <input type="checkbox" id="input-notif" onchange="toggleNotif(this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <p class="nota">Notificacoes funcionam enquanto a pagina estiver aberta no navegador.</p>
+      </div>
+      <div class="modal-botoes">
+        <button class="btn-salvar" onclick="salvarConfigGeral()">Salvar</button>
+        <button class="btn-fechar" onclick="fecharModal('modal-config')">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Confirmacao de Exclusao -->
+  <div class="modal-overlay" id="modal-excluir">
+    <div class="modal-content">
+      <h2>Excluir Remedio</h2>
+      <p style="margin-bottom:16px; color:#636e72;">Tem certeza que deseja excluir <strong id="excluir-nome"></strong>? O historico sera mantido.</p>
+      <input type="hidden" id="excluir-id">
+      <div class="modal-botoes">
+        <button class="btn-excluir" onclick="confirmarExcluir()">Excluir</button>
+        <button class="btn-fechar" onclick="fecharModal('modal-excluir')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // === DATA MODEL ===
+    // remedios: [{ id, nome, horario, recorrencia, diasSemana, intervalo, dataInicio, notas, ativo }]
+    // historico: { "remedioId": { "YYYY-MM-DD": { tomou: true, horario: "HH:MM" } } }
+    // config: { notificacoesAtivas: bool }
+
+    function carregarRemedios() {
+      try { return JSON.parse(localStorage.getItem('remedios')) || []; }
+      catch { return []; }
+    }
+    function salvarRemedios(r) { localStorage.setItem('remedios', JSON.stringify(r)); }
+
+    function carregarHistorico() {
+      try { return JSON.parse(localStorage.getItem('remedioHistorico')) || {}; }
+      catch { return {}; }
+    }
+    function salvarHistorico(h) { localStorage.setItem('remedioHistorico', JSON.stringify(h)); }
+
+    function carregarConfig() {
+      try { return JSON.parse(localStorage.getItem('remedioConfig')) || { notificacoesAtivas: false }; }
+      catch { return { notificacoesAtivas: false }; }
+    }
+    function salvarConfig(c) { localStorage.setItem('remedioConfig', JSON.stringify(c)); }
+
+    function hojeStr() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    function dataStr(d) {
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    function horaAtual() {
+      const d = new Date();
+      return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+    function gerarId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+    // Verifica se um remedio deve ser tomado em uma data especifica
+    function deveTomar(remedio, dataISO) {
+      const data = new Date(dataISO + 'T12:00:00');
+      const inicio = new Date(remedio.dataInicio + 'T12:00:00');
+      if (data < inicio) return false;
+
+      if (remedio.recorrencia === 'diario') return true;
+
+      if (remedio.recorrencia === 'dias_semana') {
+        return (remedio.diasSemana || []).includes(data.getDay());
+      }
+
+      if (remedio.recorrencia === 'intervalo') {
+        const diffDias = Math.round((data - inicio) / 86400000);
+        return diffDias % (remedio.intervalo || 1) === 0;
+      }
+
+      return true;
+    }
+
+    // === STATE ===
+    let calAno, calMes, calFiltroId = 'todos';
+    let lembreteTimeouts = [];
+    let ultimoDia = hojeStr();
+
+    // === RENDER ===
+    function renderDataHoje() {
+      const hoje = new Date();
+      document.getElementById('data-hoje').textContent = hoje.toLocaleDateString('pt-BR', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+      });
+    }
+
+    function renderRemedios() {
+      const container = document.getElementById('lista-remedios');
+      const remedios = carregarRemedios().filter(r => r.ativo !== false);
+      const hist = carregarHistorico();
+      const hoje = hojeStr();
+
+      if (remedios.length === 0) {
+        container.innerHTML = `
+          <div class="vazio-msg">
+            <div class="icone">💊</div>
+            <p>Nenhum remedio cadastrado.<br>Toque em "Adicionar Remedio" para comecar.</p>
+          </div>`;
+        return;
+      }
+
+      let html = '';
+      for (const rem of remedios) {
+        const deveHoje = deveTomar(rem, hoje);
+        const histRem = hist[rem.id] || {};
+        const registro = histRem[hoje];
+        const tomouHoje = registro && registro.tomou;
+
+        // Streak
+        let streak = 0;
+        let d = new Date();
+        if (!tomouHoje) d.setDate(d.getDate() - 1);
+        while (true) {
+          const ds = dataStr(d);
+          if (!deveTomar(rem, ds)) { d.setDate(d.getDate()-1); continue; }
+          if (histRem[ds] && histRem[ds].tomou) { streak++; d.setDate(d.getDate()-1); }
+          else break;
+          if (streak > 365) break;
+        }
+
+        const recTexto = rem.recorrencia === 'diario' ? 'Diariamente'
+          : rem.recorrencia === 'dias_semana' ? diasSemanaTexto(rem.diasSemana)
+          : `A cada ${rem.intervalo} dias`;
+
+        let btnHtml;
+        if (!deveHoje) {
+          btnHtml = `<button class="btn-tomar nao-hoje" disabled>Nao programado para hoje</button>`;
+        } else if (tomouHoje) {
+          btnHtml = `
+            <button class="btn-tomar tomou">✅ Tomado as ${registro.horario}</button>
+            <button class="btn-desfazer" onclick="desmarcar('${rem.id}')">desfazer</button>`;
+        } else {
+          btnHtml = `<button class="btn-tomar nao-tomou" onclick="marcar('${rem.id}')">💊 Marcar como Tomado</button>`;
+        }
+
+        html += `
+          <div class="card-remedio">
+            <div class="card-header">
+              <div class="card-info">
+                <h3>${escapeHtml(rem.nome)}</h3>
+                <div class="card-detalhe">
+                  <span>⏰ ${rem.horario}</span>
+                  <span>🔄 ${recTexto}</span>
+                </div>
+                ${rem.notas ? `<div class="card-detalhe" style="margin-top:2px">📝 ${escapeHtml(rem.notas)}</div>` : ''}
+              </div>
+              <div class="card-acoes">
+                <button onclick="abrirModalRemedio('${rem.id}')" title="Editar">✏️</button>
+                <button onclick="pedirExcluir('${rem.id}')" title="Excluir">🗑️</button>
+              </div>
+            </div>
+            <div class="card-status">${btnHtml}</div>
+            ${streak > 0 ? `<div class="streak-badge">🔥 ${streak} dia${streak > 1 ? 's' : ''} seguido${streak > 1 ? 's' : ''}</div>` : ''}
+          </div>`;
+      }
+      container.innerHTML = html;
+    }
+
+    function diasSemanaTexto(dias) {
+      const nomes = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
+      return (dias || []).sort().map(d => nomes[d]).join(', ');
+    }
+
+    function escapeHtml(t) {
+      const el = document.createElement('span');
+      el.textContent = t;
+      return el.innerHTML;
+    }
+
+    // === ACOES ===
+    function marcar(id) {
+      const hist = carregarHistorico();
+      if (!hist[id]) hist[id] = {};
+      hist[id][hojeStr()] = { tomou: true, horario: horaAtual() };
+      salvarHistorico(hist);
+      renderTudo();
+    }
+
+    function desmarcar(id) {
+      const hist = carregarHistorico();
+      if (hist[id]) delete hist[id][hojeStr()];
+      salvarHistorico(hist);
+      renderTudo();
+    }
+
+    // === MODAL REMEDIO ===
+    function abrirModalRemedio(editId) {
+      const modal = document.getElementById('modal-remedio');
+      document.getElementById('remedio-id').value = editId || '';
+      document.getElementById('modal-remedio-titulo').textContent = editId ? 'Editar Remedio' : 'Novo Remedio';
+
+      // Reset dias semana
+      document.querySelectorAll('.dia-semana-btn').forEach(b => b.classList.remove('ativo'));
+
+      if (editId) {
+        const rem = carregarRemedios().find(r => r.id === editId);
+        if (!rem) return;
+        document.getElementById('remedio-nome').value = rem.nome;
+        document.getElementById('remedio-horario').value = rem.horario;
+        document.getElementById('remedio-recorrencia').value = rem.recorrencia;
+        document.getElementById('remedio-intervalo').value = rem.intervalo || '';
+        document.getElementById('remedio-notas').value = rem.notas || '';
+        (rem.diasSemana || []).forEach(d => {
+          const btn = document.querySelector(`.dia-semana-btn[data-dia="${d}"]`);
+          if (btn) btn.classList.add('ativo');
+        });
+
+        // Mostrar botao excluir
+        document.getElementById('botoes-remedio').innerHTML = `
+          <button class="btn-salvar" onclick="salvarRemedio()">Salvar</button>
+          <button class="btn-fechar" onclick="fecharModal('modal-remedio')">Cancelar</button>`;
+      } else {
+        document.getElementById('remedio-nome').value = '';
+        document.getElementById('remedio-horario').value = '08:00';
+        document.getElementById('remedio-recorrencia').value = 'diario';
+        document.getElementById('remedio-intervalo').value = '';
+        document.getElementById('remedio-notas').value = '';
+        document.getElementById('botoes-remedio').innerHTML = `
+          <button class="btn-salvar" onclick="salvarRemedio()">Salvar</button>
+          <button class="btn-fechar" onclick="fecharModal('modal-remedio')">Cancelar</button>`;
+      }
+
+      toggleDiasSemana();
+      modal.classList.add('aberto');
+    }
+
+    function toggleDiasSemana() {
+      const val = document.getElementById('remedio-recorrencia').value;
+      document.getElementById('campo-dias-semana').style.display = val === 'dias_semana' ? '' : 'none';
+      document.getElementById('campo-intervalo').style.display = val === 'intervalo' ? '' : 'none';
+    }
+
+    function toggleDia(btn) {
+      btn.classList.toggle('ativo');
+    }
+
+    function salvarRemedio() {
+      const nome = document.getElementById('remedio-nome').value.trim();
+      if (!nome) { alert('Informe o nome do remedio.'); return; }
+
+      const id = document.getElementById('remedio-id').value;
+      const horario = document.getElementById('remedio-horario').value || '08:00';
+      const recorrencia = document.getElementById('remedio-recorrencia').value;
+      const notas = document.getElementById('remedio-notas').value.trim();
+
+      let diasSemana = [];
+      if (recorrencia === 'dias_semana') {
+        document.querySelectorAll('.dia-semana-btn.ativo').forEach(b => {
+          diasSemana.push(parseInt(b.dataset.dia));
+        });
+        if (diasSemana.length === 0) { alert('Selecione pelo menos um dia da semana.'); return; }
+      }
+
+      let intervalo = 1;
+      if (recorrencia === 'intervalo') {
+        intervalo = parseInt(document.getElementById('remedio-intervalo').value) || 0;
+        if (intervalo < 1) { alert('Informe um intervalo valido (minimo 1).'); return; }
+      }
+
+      const remedios = carregarRemedios();
+
+      if (id) {
+        const idx = remedios.findIndex(r => r.id === id);
+        if (idx >= 0) {
+          remedios[idx].nome = nome;
+          remedios[idx].horario = horario;
+          remedios[idx].recorrencia = recorrencia;
+          remedios[idx].diasSemana = diasSemana;
+          remedios[idx].intervalo = intervalo;
+          remedios[idx].notas = notas;
+        }
+      } else {
+        remedios.push({
+          id: gerarId(),
+          nome, horario, recorrencia, diasSemana, intervalo, notas,
+          dataInicio: hojeStr(),
+          ativo: true
+        });
+      }
+
+      salvarRemedios(remedios);
+      fecharModal('modal-remedio');
+      renderTudo();
+      agendarLembretes();
+    }
+
+    function pedirExcluir(id) {
+      const rem = carregarRemedios().find(r => r.id === id);
+      if (!rem) return;
+      document.getElementById('excluir-id').value = id;
+      document.getElementById('excluir-nome').textContent = rem.nome;
+      document.getElementById('modal-excluir').classList.add('aberto');
+    }
+
+    function confirmarExcluir() {
+      const id = document.getElementById('excluir-id').value;
+      let remedios = carregarRemedios();
+      remedios = remedios.filter(r => r.id !== id);
+      salvarRemedios(remedios);
+      fecharModal('modal-excluir');
+      renderTudo();
+      agendarLembretes();
+    }
+
+    function fecharModal(id) {
+      document.getElementById(id).classList.remove('aberto');
+    }
+
+    // === CONFIG GERAL ===
+    function abrirConfigGeral() {
+      const config = carregarConfig();
+      document.getElementById('input-notif').checked = config.notificacoesAtivas;
+      document.getElementById('modal-config').classList.add('aberto');
+    }
+
+    function salvarConfigGeral() {
+      const config = { notificacoesAtivas: document.getElementById('input-notif').checked };
+      salvarConfig(config);
+      agendarLembretes();
+      fecharModal('modal-config');
+    }
+
+    async function toggleNotif(ativado) {
+      if (ativado && 'Notification' in window) {
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') {
+          document.getElementById('input-notif').checked = false;
+        }
+      }
+    }
+
+    // === CALENDARIO ===
+    function renderCalendario() {
+      const secao = document.getElementById('calendario');
+      const remedios = carregarRemedios().filter(r => r.ativo !== false);
+      const hist = carregarHistorico();
+      const hoje = new Date();
+      const hojeDS = hojeStr();
+
+      // Filtro
+      let filtroHtml = `<option value="todos">Todos</option>`;
+      for (const r of remedios) {
+        filtroHtml += `<option value="${r.id}" ${calFiltroId === r.id ? 'selected' : ''}>${escapeHtml(r.nome)}</option>`;
+      }
+
+      const primeiroDia = new Date(calAno, calMes, 1);
+      const diasNoMes = new Date(calAno, calMes + 1, 0).getDate();
+      const diaSemanaInicio = primeiroDia.getDay();
+
+      const nomesMeses = ['Janeiro','Fevereiro','Marco','Abril','Maio','Junho',
+        'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+      const mesAtual = hoje.getFullYear() === calAno && hoje.getMonth() === calMes;
+
+      let html = `
+        <div class="cal-topo">
+          <h3>Historico</h3>
+          <select class="cal-filtro" onchange="calFiltroId=this.value; renderCalendario();">${filtroHtml}</select>
+        </div>
+        <div class="cal-header">
+          <button class="cal-nav" onclick="mesAnterior()" aria-label="Mes anterior">◀</button>
+          <span>${nomesMeses[calMes]} ${calAno}</span>
+          <button class="cal-nav" onclick="proximoMes()" ${mesAtual ? 'disabled' : ''} aria-label="Proximo mes">▶</button>
+        </div>
+        <div class="cal-grid">`;
+
+      const diasSemana = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
+      for (const ds of diasSemana) html += `<div class="cal-dia-semana">${ds}</div>`;
+
+      for (let i = 0; i < diaSemanaInicio; i++) html += `<div class="cal-dia vazio"></div>`;
+
+      for (let dia = 1; dia <= diasNoMes; dia++) {
+        const ds = `${calAno}-${String(calMes+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+        const eHoje = ds === hojeDS;
+        const eFuturo = new Date(calAno, calMes, dia) > hoje;
+
+        // Calcula status do dia
+        let totalDeve = 0, totalTomou = 0;
+        const remsParaVerificar = calFiltroId === 'todos' ? remedios : remedios.filter(r => r.id === calFiltroId);
+
+        for (const rem of remsParaVerificar) {
+          if (deveTomar(rem, ds)) {
+            totalDeve++;
+            const histRem = hist[rem.id] || {};
+            if (histRem[ds] && histRem[ds].tomou) totalTomou++;
+          }
+        }
+
+        let classes = 'cal-dia';
+        if (eHoje) classes += ' hoje';
+        if (eFuturo) classes += ' futuro';
+        else if (totalDeve > 0 && totalTomou === totalDeve) classes += ' tomou-todos';
+        else if (totalDeve > 0 && totalTomou > 0) classes += ' tomou-parcial';
+        else if (totalDeve > 0 && totalTomou === 0 && !eHoje) classes += ' nao-tomou passado';
+
+        let titulo = `${dia}`;
+        if (totalDeve > 0 && !eFuturo) titulo += ` - ${totalTomou}/${totalDeve} tomado(s)`;
+
+        html += `<div class="${classes}" title="${titulo}">${dia}</div>`;
+      }
+
+      html += '</div>';
+      secao.innerHTML = html;
+    }
+
+    function mesAnterior() {
+      calMes--;
+      if (calMes < 0) { calMes = 11; calAno--; }
+      renderCalendario();
+    }
+
+    function proximoMes() {
+      const hoje = new Date();
+      calMes++;
+      if (calMes > 11) { calMes = 0; calAno++; }
+      if (calAno > hoje.getFullYear() || (calAno === hoje.getFullYear() && calMes > hoje.getMonth())) {
+        calMes--; if (calMes < 0) { calMes = 11; calAno--; }
+        return;
+      }
+      renderCalendario();
+    }
+
+    // === NOTIFICACOES ===
+    function agendarLembretes() {
+      lembreteTimeouts.forEach(t => clearTimeout(t));
+      lembreteTimeouts = [];
+
+      const config = carregarConfig();
+      if (!config.notificacoesAtivas || !('Notification' in window) || Notification.permission !== 'granted') return;
+
+      const remedios = carregarRemedios().filter(r => r.ativo !== false);
+      const hist = carregarHistorico();
+      const agora = new Date();
+
+      for (const rem of remedios) {
+        if (!deveTomar(rem, hojeStr())) continue;
+
+        const histRem = hist[rem.id] || {};
+        const jaTomou = histRem[hojeStr()] && histRem[hojeStr()].tomou;
+
+        const [h, m] = rem.horario.split(':').map(Number);
+        let alvo = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), h, m, 0);
+
+        if (alvo <= agora) {
+          if (!jaTomou) {
+            new Notification(`💊 ${rem.nome}`, { body: `Hora de tomar ${rem.nome}!`, tag: `rem-${rem.id}` });
+          }
+          continue;
+        }
+
+        const ms = alvo - agora;
+        const tid = setTimeout(() => {
+          const h2 = carregarHistorico();
+          const hr = h2[rem.id] || {};
+          if (!(hr[hojeStr()] && hr[hojeStr()].tomou)) {
+            new Notification(`💊 ${rem.nome}`, { body: `Hora de tomar ${rem.nome}!`, tag: `rem-${rem.id}` });
+          }
+        }, ms);
+        lembreteTimeouts.push(tid);
+      }
+    }
+
+    // === RENDER ALL ===
+    function renderTudo() {
+      renderDataHoje();
+      renderRemedios();
+      renderCalendario();
+    }
+
+    // === INIT ===
+    function init() {
+      const hoje = new Date();
+      calAno = hoje.getFullYear();
+      calMes = hoje.getMonth();
+
+      renderTudo();
+      agendarLembretes();
+
+      // Rollover meia-noite
+      setInterval(() => {
+        const novodia = hojeStr();
+        if (novodia !== ultimoDia) {
+          ultimoDia = novodia;
+          renderTudo();
+          agendarLembretes();
+        }
+      }, 60000);
+
+      // Re-check ao voltar para a aba
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+          const novodia = hojeStr();
+          if (novodia !== ultimoDia) ultimoDia = novodia;
+          renderTudo();
+          agendarLembretes();
+        }
+      });
+
+      // Fechar modais ao clicar fora
+      document.querySelectorAll('.modal-overlay').forEach(m => {
+        m.addEventListener('click', e => { if (e.target === e.currentTarget) fecharModal(m.id); });
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

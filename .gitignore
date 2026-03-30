@@ -1,0 +1,4 @@
+.vercel
+bash.exe.stackdump
+*.jpg
+statusline-command.sh
