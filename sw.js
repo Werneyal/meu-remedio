@@ -1,4 +1,4 @@
-const CACHE_NAME = 'meu-remedio-v2';
+const CACHE_NAME = 'meu-remedio-v3';
 const ASSETS = [
   '/',
   '/index.html',
@@ -21,8 +21,15 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
+// Network-first: tenta rede, se falhar usa cache (offline)
 self.addEventListener('fetch', e => {
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
+    fetch(e.request)
+      .then(resp => {
+        const clone = resp.clone();
+        caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+        return resp;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
